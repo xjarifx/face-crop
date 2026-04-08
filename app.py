@@ -186,6 +186,8 @@ def main():
     
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     
+    st.markdown("### 📁 Import Images", unsafe_allow_html=True)
+    
     uploaded_files = st.file_uploader(
         "Drop images here or click to browse",
         type=['jpg', 'jpeg', 'png', 'webp'],
@@ -193,16 +195,23 @@ def main():
         help="Supported formats: JPG, PNG, WebP"
     )
     
-    st.markdown("---")
+    st.markdown("### 📂 Or Drop a Folder", unsafe_allow_html=True)
     
-    folder_path = st.text_input("Or enter folder path containing images", placeholder="/path/to/folder")
+    folder_input = st.text_input(
+        "Enter folder path containing images",
+        placeholder="/path/to/folder",
+        key="folder_input_input"
+    )
     
-    if folder_path and os.path.isdir(folder_path):
+    if folder_input and os.path.isdir(folder_input):
         supported_ext = ['.jpg', '.jpeg', '.png', '.webp']
-        folder_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) 
-                       if os.path.splitext(f.lower())[1] in supported_ext]
+        folder_files = []
+        for root, dirs, files in os.walk(folder_input):
+            for f in files:
+                if os.path.splitext(f.lower())[1] in supported_ext:
+                    folder_files.append(os.path.join(root, f))
         if folder_files:
-            st.markdown(f"Found **{len(folder_files)}** images in folder")
+            st.markdown(f"✅ Found **{len(folder_files)}** images in folder")
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -255,7 +264,7 @@ def main():
     
     supported_ext = ['.jpg', '.jpeg', '.png', '.webp']
     
-    if process_btn and (uploaded_files or (folder_path and os.path.isdir(folder_path))):
+    if process_btn and (uploaded_files or (folder_input and os.path.isdir(folder_input))):
         detector = FaceDetector()
         cropper = FaceCropper()
         
@@ -267,11 +276,11 @@ def main():
             for f in uploaded_files:
                 images_to_process.append(('upload', f.name, f))
         
-        if folder_path and os.path.isdir(folder_path):
-            folder_files = [f for f in os.listdir(folder_path) 
+        if folder_input and os.path.isdir(folder_input):
+            folder_files = [f for f in os.listdir(folder_input) 
                           if os.path.splitext(f.lower())[1] in supported_ext]
             for f in folder_files:
-                images_to_process.append(('folder', f, os.path.join(folder_path, f)))
+                images_to_process.append(('folder', f, os.path.join(folder_input, f)))
         
         with st.spinner("Processing images..."):
             progress_bar = st.progress(0)
