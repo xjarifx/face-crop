@@ -193,6 +193,17 @@ def main():
         help="Supported formats: JPG, PNG, WebP"
     )
     
+    st.markdown("---")
+    
+    folder_path = st.text_input("Or enter folder path containing images", placeholder="/path/to/folder")
+    
+    if folder_path and os.path.isdir(folder_path):
+        supported_ext = ['.jpg', '.jpeg', '.png', '.webp']
+        folder_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) 
+                       if os.path.splitext(f.lower())[1] in supported_ext]
+        if folder_files:
+            st.markdown(f"Found **{len(folder_files)}** images in folder")
+    
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
@@ -200,7 +211,7 @@ def main():
     
     col1, col2 = st.columns(2)
     with col1:
-        target_width = st.number_input("Output Width (px)", min_value=50, max_value=2000, value=400, step=10)
+        target_width = st.number_input("Output Width (px)", min_value=50, max_value=2000, value=500, step=10)
     with col2:
         target_height = st.number_input("Output Height (px)", min_value=50, max_value=2000, value=500, step=10)
     
@@ -242,23 +253,40 @@ def main():
         st.session_state.face_info = []
         st.rerun()
     
-    if process_btn and uploaded_files:
+    supported_ext = ['.jpg', '.jpeg', '.png', '.webp']
+    
+    if process_btn and (uploaded_files or (folder_path and os.path.isdir(folder_path))):
         detector = FaceDetector()
         cropper = FaceCropper()
         
         all_results = []
         
+        images_to_process = []
+        
+        if uploaded_files:
+            for f in uploaded_files:
+                images_to_process.append(('upload', f.name, f))
+        
+        if folder_path and os.path.isdir(folder_path):
+            folder_files = [f for f in os.listdir(folder_path) 
+                          if os.path.splitext(f.lower())[1] in supported_ext]
+            for f in folder_files:
+                images_to_process.append(('folder', f, os.path.join(folder_path, f)))
+        
         with st.spinner("Processing images..."):
             progress_bar = st.progress(0)
             
-            for idx, uploaded_file in enumerate(uploaded_files):
-                image = Image.open(uploaded_file)
-                original_name = os.path.splitext(uploaded_file.name)[0]
+            for idx, (source_type, name, path_or_file) in enumerate(images_to_process):
+                if source_type == 'upload':
+                    image = Image.open(path_or_file)
+                else:
+                    image = Image.open(path_or_file)
+                original_name = os.path.splitext(name)[0]
                 
                 faces = detector.detect_faces(image, min_confidence)
                 
                 if not faces:
-                    st.warning(f"⚠️ No face detected in {uploaded_file.name}")
+                    st.warning(f"⚠️ No face detected in {name}")
                     continue
                 
                 if crop_all_faces:
@@ -268,7 +296,7 @@ def main():
                             enhance=enhance_quality
                         )
                         save_name = f"{original_name}_face{face_idx + 1}.png"
-                        all_results.append((cropped, save_name, {'face': face, 'source': uploaded_file.name}))
+                        all_results.append((cropped, save_name, {'face': face, 'source': name}))
                 else:
                     combined = cropper.crop_combined(
                         image, faces, target_width, target_height, padding_percent,
@@ -276,9 +304,9 @@ def main():
                     )
                     if combined:
                         save_name = f"{original_name}_crop.png"
-                        all_results.append((combined, save_name, {'face': faces[0], 'source': uploaded_file.name}))
+                        all_results.append((combined, save_name, {'face': faces[0], 'source': name}))
                 
-                progress_bar.progress((idx + 1) / len(uploaded_files))
+                progress_bar.progress((idx + 1) / len(images_to_process))
         
         st.session_state.processed_images = [r[0] for r in all_results]
         st.session_state.original_names = [r[1] for r in all_results]
