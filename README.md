@@ -1,5 +1,10 @@
 # Face Crop ✂️
 
+> Quick start:
+> ```bash
+> python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && streamlit run app.py
+> ```
+
 A web application for detecting and cropping human faces from images with customizable dimensions and quality enhancement.
 
 ## Features

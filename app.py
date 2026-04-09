@@ -238,7 +238,7 @@ def main():
     
     col_enh1, col_enh2 = st.columns(2)
     with col_enh1:
-        enhance_quality = st.toggle("Enhance Image Quality", value=True, help="Apply sharpening and detail enhancement")
+        enhance_quality = st.toggle("Enhance Image Quality", value=False, help="Apply sharpening and detail enhancement")
     with col_enh2:
         st.empty()
     
